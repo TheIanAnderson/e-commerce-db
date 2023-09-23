@@ -1,28 +1,102 @@
-const router = require('express').Router();
-const { Tag, Product, ProductTag } = require('../../models');
+const router = require("express").Router();
+const { Tag, Product, ProductTag } = require("../../models");
 
-// The `/api/tags` endpoint
-
-router.get('/', (req, res) => {
-  // find all tags
-  // be sure to include its associated Product data
+router.get("/", async (req, res) => {
+  try {
+    const tags = await Tag.findAll({
+      include: [
+        {
+          model: Product,
+          through: ProductTag,
+        },
+      ],
+    });
+    res.json(tags);
+  } catch (err) {
+    res.status(500).json({ error: "An error occurred while fetching tags." });
+  }
 });
 
-router.get('/:id', (req, res) => {
-  // find a single tag by its `id`
-  // be sure to include its associated Product data
+router.get("/:id", async (req, res) => {
+  try {
+    const tagId = req.params.id;
+    const tag = await Tag.findByPk(tagId, {
+      include: [
+        {
+          model: Product,
+          through: ProductTag,
+        },
+      ],
+    });
+
+    if (tag) {
+      res.json(tag);
+    } else {
+      res.status(404).json({ error: "Tag not found." });
+    }
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching the tag." });
+  }
 });
 
-router.post('/', (req, res) => {
-  // create a new tag
+router.post("/", async (req, res) => {
+  try {
+    const newTag = await Tag.create(req.body);
+    res.status(201).json(newTag);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while creating the tag." });
+  }
 });
 
-router.put('/:id', (req, res) => {
-  // update a tag's name by its `id` value
+router.put("/:id", async (req, res) => {
+  try {
+    const tagId = req.params.id;
+    const updatedTag = await Tag.update(
+      {
+        tag_name: req.body.tag_name,
+      },
+      {
+        where: {
+          id: tagId,
+        },
+      }
+    );
+
+    if (updatedTag[0] === 1) {
+      res.status(200).json({ message: "Tag updated successfully." });
+    } else {
+      res.status(404).json({ error: "Tag not found." });
+    }
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while updating the tag." });
+  }
 });
 
-router.delete('/:id', (req, res) => {
-  // delete on tag by its `id` value
+router.delete("/:id", async (req, res) => {
+  try {
+    const tagId = req.params.id;
+    const deletedTag = await Tag.destroy({
+      where: {
+        id: tagId,
+      },
+    });
+
+    if (deletedTag === 1) {
+      res.status(200).json({ message: "Tag deleted successfully." });
+    } else {
+      res.status(404).json({ error: "Tag not found." });
+    }
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while deleting the tag." });
+  }
 });
 
 module.exports = router;
